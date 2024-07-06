@@ -1,34 +1,16 @@
-# Builder
-FROM python:3.11-buster as builder
+FROM python:3.11-alpine
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
-
-ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_VIRTUALENVS_CREATE=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
-
 
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
+RUN poetry install
 
-# Runner
-FROM python:3.11-slim-buster as runner
-
-
-ENV VIRTUAL_ENV=/app/.venv \
-    PATH="/app/.venv/bin:$PATH"
-
-
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-
-COPY app app
-
-COPY prestart.sh ./
+COPY . .
 
 RUN poetry run bash ./prestart.sh
 
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--reload"]
+
+CMD ["poetry", "run", "app.main:app", "--reload"]
